@@ -1,0 +1,5 @@
+{
+  "name": "員工出勤薪資計算器",
+  "description": "上傳 POS 系統匯出的出勤 CSV 檔案，自動計算員工總工時與薪資。",
+  "requestFramePermissions": []
+}
