@@ -150,9 +150,14 @@ export default function App() {
                 <DollarSign className="absolute left-0 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
                 <input
                   id="wage"
-                  type="number"
+                  type="text"
+                  inputMode="numeric"
                   value={hourlyWage}
-                  onChange={(e) => setHourlyWage(Number(e.target.value))}
+                  onFocus={(e) => e.target.select()}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/[^0-9]/g, '').replace(/^0+/, '');
+                    setHourlyWage(val === '' ? 0 : Number(val));
+                  }}
                   className="pl-5 pr-2 py-1 text-xl font-medium focus:outline-none w-32"
                 />
               </div>
