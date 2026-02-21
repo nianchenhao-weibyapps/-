@@ -6,9 +6,10 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import Papa from 'papaparse';
 import { parse, differenceInMinutes, format } from 'date-fns';
-import { Upload, DollarSign, Clock, Users, FileText, Trash2, AlertCircle } from 'lucide-react';
+import { Upload, DollarSign, Clock, Users, FileText, Trash2, AlertCircle, X, Calendar } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { motion, AnimatePresence } from 'motion/react';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -40,6 +41,7 @@ export default function App() {
   const [data, setData] = useState<AttendanceRow[]>([]);
   const [hourlyWage, setHourlyWage] = useState<number>(190); // Default minimum wage in Taiwan approx
   const [isDragging, setIsDragging] = useState(false);
+  const [selectedEmployee, setSelectedEmployee] = useState<EmployeeSummary | null>(null);
 
   const handleFileUpload = (file: File) => {
     Papa.parse(file, {
@@ -270,9 +272,13 @@ export default function App() {
                           <div className="text-xs font-mono text-zinc-400">{emp.id}</div>
                         </td>
                         <td className="px-6 py-5">
-                          <span className="bg-zinc-100 px-2.5 py-1 rounded-full text-sm font-medium">
+                          <button 
+                            onClick={() => setSelectedEmployee(emp)}
+                            className="bg-zinc-100 hover:bg-zinc-200 px-2.5 py-1 rounded-full text-sm font-medium transition-colors cursor-pointer flex items-center gap-1.5"
+                          >
                             {emp.records.length} 次
-                          </span>
+                            <span className="text-[10px] bg-zinc-400 text-white px-1 rounded">查看</span>
+                          </button>
                         </td>
                         <td className="px-6 py-5">
                           <div className="font-medium">{formatHours(emp.totalMinutes)}</div>
@@ -305,6 +311,91 @@ export default function App() {
           </div>
         )}
       </div>
+
+      {/* Detail Modal */}
+      <AnimatePresence>
+        {selectedEmployee && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedEmployee(null)}
+              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh]"
+            >
+              {/* Modal Header */}
+              <div className="p-6 border-b border-zinc-100 flex items-center justify-between bg-zinc-50/50">
+                <div>
+                  <h3 className="text-2xl font-bold">{selectedEmployee.name}</h3>
+                  <p className="text-sm text-zinc-500">出勤明細紀錄 ({selectedEmployee.records.length} 筆)</p>
+                </div>
+                <button 
+                  onClick={() => setSelectedEmployee(null)}
+                  className="p-2 hover:bg-zinc-200 rounded-full transition-colors"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              {/* Modal Content */}
+              <div className="flex-1 overflow-y-auto p-6">
+                <div className="space-y-4">
+                  {selectedEmployee.records.map((record, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-4 rounded-2xl border border-zinc-100 bg-white hover:border-zinc-200 transition-all">
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 bg-zinc-100 rounded-xl flex items-center justify-center">
+                          <Calendar className="w-5 h-5 text-zinc-500" />
+                        </div>
+                        <div>
+                          <div className="font-semibold">{record.date}</div>
+                          <div className="text-sm text-zinc-500 flex items-center gap-2">
+                            <Clock className="w-3 h-3" />
+                            {record.start} - {record.end}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-mono font-medium text-zinc-900">
+                          {formatHours(record.minutes)}
+                        </div>
+                        <div className="text-xs text-zinc-400">
+                          {(record.minutes / 60).toFixed(1)} 小時
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="p-6 border-t border-zinc-100 bg-zinc-50/50 flex justify-between items-center">
+                <div className="flex gap-6">
+                  <div>
+                    <div className="text-[10px] uppercase tracking-wider text-zinc-400 font-bold">總計時數</div>
+                    <div className="text-lg font-bold">{formatHours(selectedEmployee.totalMinutes)}</div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] uppercase tracking-wider text-zinc-400 font-bold">預估薪資</div>
+                    <div className="text-lg font-bold text-emerald-600">${calculateSalary(selectedEmployee.totalMinutes).toLocaleString()}</div>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setSelectedEmployee(null)}
+                  className="px-6 py-2 bg-zinc-900 text-white rounded-xl font-semibold hover:bg-zinc-800 transition-colors"
+                >
+                  關閉
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
